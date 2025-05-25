@@ -1,0 +1,70 @@
+name: CI/CD Node.js Railway
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    name: Test, Lint & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout del codi
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Instal·lar Node.js i dependències
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      # 3. Comprovar qualitat del codi amb ESLint
+      - name: Lint code
+        run: npm run lint
+
+      # 4. Executar tests automàtics
+      - name: Run tests
+        run: npm test
+
+      # 5. Fer build del projecte
+      - name: Build project
+        run: npm run build
+
+  deploy:
+    name: Deploy to Railway
+    needs: ci
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      # 1. Checkout del codi
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Instal·lar Node.js i dependències
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      # 3. Build del projecte (assegura build net abans de desplegar)
+      - name: Build project
+        run: npm run build
+
+      # 4. Desplegament a Railway
+      - name: Deploy to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: npx railway up --service ${{ secrets.RAILWAY_SERVICE_ID }}
+
+      # Nota: Assegura't que RAILWAY_TOKEN i RAILWAY_SERVICE_ID estan configurats als secrets de GitHub
